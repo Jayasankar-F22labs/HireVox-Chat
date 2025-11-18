@@ -52,8 +52,8 @@ export function LoginPage() {
       return
     }
 
-    // If we're already on chat, don't redirect
-    if (location.pathname === '/chat') {
+    // If we're already on chat or chat with id, don't redirect
+    if (location.pathname.startsWith('/chat')) {
       prevUserIdRef.current = sessionUserId
       return
     }
@@ -65,7 +65,7 @@ export function LoginPage() {
     if (sessionUserId && userIdChanged && !hasRedirectedRef.current) {
       hasRedirectedRef.current = true
       prevUserIdRef.current = sessionUserId
-    //   navigateRef.current('/chat', { replace: true })
+      navigateRef.current('/chat', { replace: true })
       return
     }
 
@@ -208,7 +208,6 @@ export function LoginPage() {
           }
         )
 
-        console.log('Auth token stored in cookies:', cookieName)
       } catch (cookieError) {
         console.error('Failed to set auth token in cookies:', cookieError)
         toast.error('Failed to save authentication', {
@@ -222,6 +221,11 @@ export function LoginPage() {
     })
     setForm((prev) => ({ ...prev, passcode: '' }))
     setCodeRequested(false)
+    
+    // Redirect to chat after successful login
+    setTimeout(() => {
+      navigate('/chat', { replace: true })
+    }, 500)
   }
 
   return (

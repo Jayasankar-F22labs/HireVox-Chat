@@ -233,7 +233,6 @@ export default function DashboardPage() {
     // Navigate to the chat URL with the conversation ID
     // Messages will be automatically loaded by the useEffect when id changes
     navigate(`/chat/${conversation.session_id}`, { replace: true })
-    console.log('Selected conversation:', conversation, 'at index:', index)
   }
 
   const handleDownloadConversation = async () => {
@@ -337,7 +336,6 @@ export default function DashboardPage() {
                     type="button"
                     onClick={() => {
                       // Profile action - can be extended later
-                      console.log('Profile clicked')
                     }}
                     className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-white/90 transition hover:bg-white/10"
                   >

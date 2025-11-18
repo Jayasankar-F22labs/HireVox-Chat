@@ -121,8 +121,6 @@ export function setCookie(name: string, value: string, days?: number, options?: 
   if (cookieValue !== value) {
     console.warn(`Failed to set cookie: ${name}. Expected: ${value}, Got: ${cookieValue}`)
     console.warn(`Cookie string: ${cookieString}`)
-  } else {
-    console.log(`Cookie set successfully: ${name}`)
   }
 }
 
