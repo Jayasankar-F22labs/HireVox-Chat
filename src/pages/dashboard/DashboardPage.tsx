@@ -229,7 +229,7 @@ export default function DashboardPage() {
     }
   }
 
-  const handleChatSelect = (conversation: Conversation, index: number) => {
+  const handleChatSelect = (conversation: Conversation) => {
     // Navigate to the chat URL with the conversation ID
     // Messages will be automatically loaded by the useEffect when id changes
     navigate(`/chat/${conversation.session_id}`, { replace: true })
