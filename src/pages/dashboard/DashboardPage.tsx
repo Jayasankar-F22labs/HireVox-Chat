@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
+import { isAxiosError } from 'axios'
 import ReactMarkdown from 'react-markdown'
 
 import { Download, LogOut, MessageSquarePlus, Mic, Send, Share2, User } from 'lucide-react'
@@ -40,8 +41,10 @@ export default function DashboardPage() {
   const { session } = useAuth()
   const navigate = useNavigate()
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const promptFormRef = useRef<HTMLFormElement>(null)
   const conversationsFetchedRef = useRef(false)
   const messagesFetchedRef = useRef<string | null>(null)
+  const pendingChatsRef = useRef<Set<string>>(new Set())
   
   // Use id from URL as activeChatId
   const activeChatId = id
@@ -50,6 +53,16 @@ export default function DashboardPage() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
+
+  const syncPendingChats = (list: Conversation[]) => {
+    if (!pendingChatsRef.current.size) return
+    list.forEach((conversation) => {
+      const key = conversation.session_id || conversation.id
+      if (key && pendingChatsRef.current.has(key)) {
+        pendingChatsRef.current.delete(key)
+      }
+    })
+  }
 
   // Fetch conversations on component mount
   useEffect(() => {
@@ -65,6 +78,7 @@ export default function DashboardPage() {
         setError(null)
         const data = await getConversations()
         setConversations(data)
+        syncPendingChats(data)
         
         // Don't auto-select first conversation - let user select one
         // if (data.length > 0) {
@@ -88,27 +102,31 @@ export default function DashboardPage() {
 
   // Load conversation messages when id changes
   useEffect(() => {
-    // Prevent duplicate calls for the same chatId (React StrictMode in development)
+    if (!activeChatId) {
+      setMessages([])
+      messagesFetchedRef.current = null
+      return
+    }
+
+    if (pendingChatsRef.current.has(activeChatId)) {
+      setMessages([])
+      messagesFetchedRef.current = null
+      return
+    }
+
     if (messagesFetchedRef.current === activeChatId) {
       return
     }
-    messagesFetchedRef.current = activeChatId || null
+
+    messagesFetchedRef.current = activeChatId
 
     const loadConversationMessages = async () => {
-      if (!activeChatId) {
-        // Clear messages if no chat is selected
-        setMessages([])
-        return
-      }
-
       try {
         setLoadingMessages(true)
         setError(null)
         const conversationResponse = await getConversationMessages(activeChatId)
-        
+
         if (conversationResponse && conversationResponse.success && conversationResponse.conversation) {
-          // Transform API messages to component Message format
-          // Generate IDs for messages since API doesn't provide them
           const loadedMessages: Message[] = conversationResponse.conversation.map((msg, index) => ({
             id: `${activeChatId}-${index}-${Date.now()}`,
             role: msg.role,
@@ -117,10 +135,15 @@ export default function DashboardPage() {
           }))
           setMessages(loadedMessages)
         } else {
-          // No messages found, start with empty array
           setMessages([])
         }
       } catch (err) {
+        if (isAxiosError(err) && err.response?.status === 404) {
+          setMessages([])
+          messagesFetchedRef.current = null
+          return
+        }
+
         const errorMessage = err instanceof Error ? err.message : 'Failed to load conversation'
         console.error('Failed to fetch conversation messages:', err)
         setError(errorMessage)
@@ -128,6 +151,7 @@ export default function DashboardPage() {
           description: errorMessage,
         })
         setMessages([])
+        messagesFetchedRef.current = null
       } finally {
         setLoadingMessages(false)
       }
@@ -137,10 +161,12 @@ export default function DashboardPage() {
   }, [activeChatId])
 
   const handleNewChat = () => {
-    // Generate new UUID and navigate to /chat/:id
     const newChatId = generateUUID()
-    navigate(`/chat/${newChatId}`, { replace: true })
+    pendingChatsRef.current.add(newChatId)
+    messagesFetchedRef.current = null
+    setMessages([])
     setPromptValue('')
+    navigate(`/chat/${newChatId}`, { replace: true })
   }
 
   const handlePromptSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -205,6 +231,7 @@ export default function DashboardPage() {
       // Refresh conversations list after sending message
       const data = await getConversations()
       setConversations(data)
+      syncPendingChats(data)
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to send message'
       toast.error('Failed to send message', {
@@ -230,9 +257,14 @@ export default function DashboardPage() {
   }
 
   const handleChatSelect = (conversation: Conversation) => {
-    // Navigate to the chat URL with the conversation ID
-    // Messages will be automatically loaded by the useEffect when id changes
-    navigate(`/chat/${conversation.session_id}`, { replace: true })
+    const conversationId = conversation.session_id || conversation.id
+    if (!conversationId) return
+
+    pendingChatsRef.current.delete(conversationId)
+    if (conversationId !== activeChatId) {
+      messagesFetchedRef.current = null
+    }
+    navigate(`/chat/${conversationId}`, { replace: true })
   }
 
   const handleDownloadConversation = async () => {
@@ -253,6 +285,26 @@ export default function DashboardPage() {
       toast.error('Download failed', {
         description: errorMessage,
       })
+    }
+  }
+
+  const handlePromptKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault()
+
+      if (!promptValue.trim() || sending || !activeChatId) {
+        return
+      }
+
+      if (promptFormRef.current) {
+        if (typeof promptFormRef.current.requestSubmit === 'function') {
+          promptFormRef.current.requestSubmit()
+        } else {
+          promptFormRef.current.dispatchEvent(
+            new Event('submit', { bubbles: true, cancelable: true })
+          )
+        }
+      }
     }
   }
 
@@ -406,7 +458,7 @@ export default function DashboardPage() {
               </div>
             </div>
           ) : (
-            <div className="flex-1 space-y-4 overflow-y-auto pt-6">
+            <div className="flex-1 space-y-4 overflow-y-auto px-4 sm:px-6 pt-6">
               {loadingMessages ? (
                 <div className="flex h-full items-center justify-center">
                   <p className="text-sm text-white/50">Loading messages...</p>
@@ -494,37 +546,45 @@ export default function DashboardPage() {
           )}
 
           {activeChatId && (
-            <form
-              onSubmit={handlePromptSubmit}
-              className="mt-4 flex shrink-0 items-center gap-4 rounded-[32px] bg-[#121113]/90 px-8 py-4 shadow-[0_0_50px_rgba(0,0,0,0.45)]"
-            >
-              <label htmlFor="prompt-input" className="sr-only">
-                Prompt
-              </label>
-              <textarea
-                id="prompt-input"
-                value={promptValue}
-                onChange={(event) => setPromptValue(event.target.value)}
-                placeholder="Writing a Prompt Here"
-                rows={2}
-                className="max-h-32 flex-1 resize-none overflow-hidden border-none bg-transparent text-base text-white placeholder:text-white/60 focus:outline-none"
-              />
-            <button
-              type="button"
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/20 text-white transition hover:text-white/80 focus-visible:outline-none focus-visible:ring-0"
-                aria-label="Record voice prompt"
-            >
-              <Mic className="h-5 w-5" />
-            </button>
-            <button
-                type="submit"
-                disabled={sending || !promptValue.trim()}
-                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#7D3BFF] text-white transition hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
-                aria-label="Send prompt"
-            >
-              <Send className="h-5 w-5" />
-            </button>
-            </form>
+            <div className="mt-4 w-full px-4 sm:px-6 pb-4">
+              <form
+                ref={promptFormRef}
+                onSubmit={handlePromptSubmit}
+                className="flex shrink-0 items-center gap-3 rounded-[32px] bg-[#121113]/90 px-3 sm:px-6 py-3 shadow-[0_0_40px_rgba(0,0,0,0.45)]"
+              >
+                <label htmlFor="prompt-input" className="sr-only">
+                  Prompt
+                </label>
+                <textarea
+                  id="prompt-input"
+                  value={promptValue}
+                  onChange={(event) => setPromptValue(event.target.value)}
+                  onKeyDown={handlePromptKeyDown}
+                  placeholder="Write your prompt..."
+                  rows={promptValue.trim() ? 2 : 1}
+                  className={`flex-1 resize-none overflow-hidden border-none bg-transparent text-base text-white placeholder:text-white/60 focus:outline-none ${
+                    promptValue.trim() ? 'mt-2 mb-2' : 'my-1'
+                  } max-h-32 pl-2 pr-1`}
+                />
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/20 text-white transition hover:text-white/80 focus-visible:outline-none focus-visible:ring-0"
+                    aria-label="Record voice prompt"
+                  >
+                    <Mic className="h-5 w-5" />
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={sending || !promptValue.trim()}
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#7D3BFF] text-white transition hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+                    aria-label="Send prompt"
+                  >
+                    <Send className="h-5 w-5" />
+                  </button>
+                </div>
+              </form>
+            </div>
           )}
         </main>
       </div>

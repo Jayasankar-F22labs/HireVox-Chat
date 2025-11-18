@@ -21,9 +21,11 @@ export function ChatHistory({ conversations, activeChatId, loading, error, onCha
   }
 
   return (
-    <div className="mt-6 flex-1 overflow-y-auto">
-      <p className="text-xs uppercase tracking-[0.45em] text-white/40">Chat History</p>
-      <div className="mt-4 space-y-2">
+    <div className="mt-6 flex-1 min-h-0 flex flex-col">
+      <div className="sticky top-0 z-10 pb-3 border-b border-white/5">
+        <p className="text-xs uppercase tracking-[0.45em] text-white/40">Chat History</p>
+      </div>
+      <div className="flex-1 overflow-y-auto space-y-2 pr-1 pt-3">
         {loading && (
           <div className="flex items-center justify-center py-8">
             <p className="text-sm text-white/50">Loading conversations...</p>
