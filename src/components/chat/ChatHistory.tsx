@@ -5,7 +5,7 @@ interface ChatHistoryProps {
   activeChatId?: string
   loading?: boolean
   error?: string | null
-  onChatSelect?: (conversation: Conversation, index: number) => void
+  onChatSelect?: (conversation: Conversation) => void
 }
 
 export function ChatHistory({ conversations, activeChatId, loading, error, onChatSelect }: ChatHistoryProps) {
@@ -58,7 +58,7 @@ export function ChatHistory({ conversations, activeChatId, loading, error, onCha
               <button
                 key={conversationId || index}
                 type="button"
-                onClick={() => onChatSelect?.(conversation, index)}
+                onClick={() => onChatSelect?.(conversation)}
                 className={`flex w-full items-center justify-between rounded-2xl px-4 py-3 text-left text-sm transition-all duration-200 ${
                   isActive
                     ? 'bg-gradient-to-r from-[#7D3BFF]/20 to-[#4ED0FF]/10 border border-[#7D3BFF]/30 text-white shadow-[0_10px_25px_rgba(125,59,255,0.25)]'
