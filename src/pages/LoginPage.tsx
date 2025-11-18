@@ -14,7 +14,6 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { APP_NAME } from '@/constants/app'
-import { API_ORIGIN } from '@/config/api'
 import { setCookie } from '@/lib/cookieUtils'
 import { supabase } from '@/lib/supabaseClient'
 import { useAuth } from '@/providers/AuthProvider'
@@ -185,16 +184,10 @@ export function LoginPage() {
         
         // For cross-origin API calls, we need sameSite: 'none' and secure: true
         // Check if API URL is different origin
-        const isCrossOrigin = window.location.origin !== new URL(API_ORIGIN).origin
-        
         setCookie(
           cookieName,
           data.session.access_token,
           7, // 7 days expiration
-          {
-            secure: isCrossOrigin || window.location.protocol === 'https:', // Required for cross-origin
-            sameSite: isCrossOrigin ? 'none' : 'lax', // 'none' required for cross-origin
-          }
         )
 
         // Also set a generic auth token cookie for easier access
@@ -202,10 +195,6 @@ export function LoginPage() {
           'auth_token',
           data.session.access_token,
           7,
-          {
-            secure: isCrossOrigin || window.location.protocol === 'https:',
-            sameSite: isCrossOrigin ? 'none' : 'lax',
-          }
         )
 
       } catch (cookieError) {
