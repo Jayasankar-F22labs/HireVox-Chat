@@ -14,7 +14,8 @@ export function getCookie(name: string): string | null {
   const parts = value.split(`; ${name}=`)
 
   if (parts.length === 2) {
-    return parts.pop()?.split(';').shift() || null
+    const rawValue = parts.pop()?.split(';').shift()
+    return rawValue ? decodeURIComponent(rawValue) : null
   }
 
   return null
@@ -91,22 +92,38 @@ export function setCookie(name: string, value: string, days?: number, options?: 
     expires = `; expires=${date.toUTCString()}`
   }
 
-  // For cross-origin requests, we need sameSite: 'none' and secure: true
-  // Check if we're making requests to a different origin
+  // For cross-origin requests, browsers normally require SameSite=None and Secure=true.
+  // However, when running on plain HTTP (e.g. previews or testing), we relax this rule
+  // so cookies can still be set (they just won't be sent cross-site). This keeps local
+  // dev / non-HTTPS deploys functioning at the cost of reduced security.
   let isCrossOrigin = false
+  let isHttps = false
   try {
-    isCrossOrigin = window.location.origin !== new URL(API_ORIGIN).origin
+    const currentUrl = new URL(window.location.href)
+    const apiOrigin = new URL(API_ORIGIN)
+    isCrossOrigin = currentUrl.origin !== apiOrigin.origin
+    isHttps = currentUrl.protocol === 'https:'
   } catch {
-    // If URL parsing fails, assume same origin
+    // If URL parsing fails, assume same origin / protocol
     isCrossOrigin = false
+    isHttps = typeof window !== 'undefined' ? window.location.protocol === 'https:' : false
   }
-  
-  // Use secure flag if explicitly requested OR if sameSite is 'none' (required by browsers)
-  const useSecure = options?.secure || options?.sameSite === 'none' || isCrossOrigin
-  const secure = useSecure ? '; secure' : ''
-  
-  // Default to 'none' for cross-origin, 'lax' for same-origin
-  const sameSiteValue = options?.sameSite || (isCrossOrigin ? 'none' : 'lax')
+
+  // Only force secure when we're actually on HTTPS or explicitly requested
+  const shouldUseSecure =
+    options?.secure ??
+    (options?.sameSite === 'none' && isHttps) ??
+    (isCrossOrigin && isHttps)
+  const secure = shouldUseSecure ? '; secure' : ''
+
+  // If we're cross-origin but on HTTP, fall back to lax so the cookie can still be stored
+  const sameSiteValue = (() => {
+    if (options?.sameSite) return options.sameSite
+    if (isCrossOrigin) {
+      return isHttps ? 'none' : 'lax'
+    }
+    return 'lax'
+  })()
   const sameSite = `; samesite=${sameSiteValue}`
   const path = '; path=/'
 
