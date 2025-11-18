@@ -10,12 +10,12 @@ import { API_ORIGIN } from '@/config/api'
 export function getCookie(name: string): string | null {
   if (typeof document === 'undefined') return null
 
-  const value = `; ${document.cookie}`
-  const parts = value.split(`; ${name}=`)
-
-  if (parts.length === 2) {
-    const rawValue = parts.pop()?.split(';').shift()
-    return rawValue ? decodeURIComponent(rawValue) : null
+  const cookies = document.cookie.split(';')
+  for (const entry of cookies) {
+    const [key, ...rest] = entry.trim().split('=')
+    if (!key || key !== name) continue
+    const rawValue = rest.join('=')
+    return rawValue ? decodeURIComponent(rawValue) : ''
   }
 
   return null
