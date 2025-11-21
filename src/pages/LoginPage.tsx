@@ -3,16 +3,6 @@ import type { FormEvent } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 
-import { Button } from '@/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { APP_NAME } from '@/constants/app'
 import { setCookie } from '@/lib/cookieUtils'
 import { supabase } from '@/lib/supabaseClient'
@@ -79,8 +69,8 @@ export function LoginPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-950 text-white">
-        <p className="text-sm text-muted-foreground">Loading...</p>
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-[#667eea] to-[#764ba2]">
+        <p className="text-sm text-white/80">Loading...</p>
       </div>
     )
   }
@@ -218,100 +208,126 @@ export function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-950 to-slate-900 px-4 py-12 text-foreground">
-      <div className="mx-auto flex w-full max-w-5xl flex-col items-center gap-8">
-        <header className="space-y-3 text-center">
-          <p className="inline-flex items-center rounded-full border border-white/20 px-3 py-1 text-xs uppercase tracking-[0.2em] text-muted-foreground">
+    <div className="min-h-screen bg-gradient-to-br from-[#667eea] to-[#764ba2] flex items-center justify-center px-5 py-12">
+      <div className="bg-white rounded-3xl shadow-2xl max-w-[700px] w-full p-8 sm:p-12 md:p-16">
+        <div className="text-center mb-10">
+          <div className="inline-block text-[11px] font-semibold tracking-[2px] uppercase text-[#667eea] bg-[rgba(102,126,234,0.1)] px-5 py-2 rounded-full mb-8">
             {APP_NAME}
-          </p>
-          <h1 className="text-3xl font-semibold tracking-tight text-white md:text-4xl">
-            Sign in to your AI hiring workspace
+          </div>
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-[#1a202c] mb-6 leading-tight">
+            Describe your ideal hire.<br />We'll help you hire them.
           </h1>
-          <p className="text-base text-muted-foreground md:text-lg">
-            Secure, passwordless access powered by Supabase. Drop in your email,
-            grab the 8-digit code, and jump back into crafting job descriptions,
-            interview kits, and outreach briefs with Hiring Assistants.
+          <p className="text-base sm:text-lg text-[#4a5568] mb-8 leading-relaxed">
+            Talk to our AI hiring assistant about your ideal candidate—what skills matter most, what experience you need, and what makes someone successful in this role.
           </p>
-        </header>
+        </div>
 
-        <Card className="w-full max-w-md border-white/10 bg-black/50 backdrop-blur">
-          <CardHeader>
-            <CardTitle className="text-white">Continue to Hiring Assistants</CardTitle>
-            <CardDescription>
-              We’ll email you a one-time passcode to verify it’s really you.
-            </CardDescription>
-          </CardHeader>
+        <div className="bg-[#f7fafc] rounded-2xl p-6 sm:p-8 mb-8">
+          <p className="text-base text-[#2d3748] mb-5 font-medium">
+            From there, we'll help you:
+          </p>
+          
+          <div className="space-y-5">
+            <div className="flex items-start">
+              <span className="text-[#667eea] text-2xl mr-3 leading-none flex-shrink-0">•</span>
+              <div>
+                <h3 className="text-base sm:text-lg font-semibold text-[#1a202c] mb-1">
+                  Build the right interview
+                </h3>
+                <p className="text-sm sm:text-base text-[#4a5568] leading-relaxed">
+                  Custom questions that assess what actually matters for success in the role
+                </p>
+              </div>
+            </div>
 
-          <CardContent>
-            <form className="space-y-4" onSubmit={handleVerifyPasscode} noValidate>
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  placeholder="you@example.com"
-                  value={form.email}
-                  onChange={handleInputChange}
-                  onBlur={handleEmailBlur}
-                  aria-invalid={Boolean(emailError)}
-                  required
-                />
-                {emailError && (
-                  <p className="text-xs text-rose-300" role="alert">
-                    {emailError}
-                  </p>
-                )}
+            <div className="flex items-start">
+              <span className="text-[#667eea] text-2xl mr-3 leading-none flex-shrink-0">•</span>
+              <div>
+                <h3 className="text-base sm:text-lg font-semibold text-[#1a202c] mb-1">
+                  Source better candidates
+                </h3>
+                <p className="text-sm sm:text-base text-[#4a5568] leading-relaxed">
+                  Targeted job descriptions and outreach strategies that attract qualified talent
+                </p>
               </div>
-              {codeRequested && (
-                <div className="space-y-2">
-                  <Label htmlFor="passcode">Passcode</Label>
-                  <Input
-                    id="passcode"
-                    name="passcode"
-                    type="text"
-                    placeholder="8-digit code"
-                    value={form.passcode}
-                    onChange={handleInputChange}
-                    inputMode="numeric"
-                    pattern="\\d{8}"
-                    maxLength={8}
-                    required={codeRequested}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Enter the latest code from your inbox. Codes expire quickly, so request a new
-                    one if needed.
-                  </p>
-                </div>
-              )}
-              <div className="flex flex-col gap-3 sm:flex-row">
-                <Button
-                  className="w-full"
-                  type="button"
-                  variant="secondary"
-                  onClick={handleRequestPasscode}
-                  disabled={requestingCode || !canRequestPasscode}
-                >
-                  {requestingCode
-                    ? 'Sending...'
-                    : codeRequested
-                      ? 'Resend passcode'
-                      : 'Send passcode'}
-                </Button>
-                {codeRequested && (
-                  <Button className="w-full" type="submit" disabled={verifyingCode}>
-                    {verifyingCode ? 'Verifying...' : 'Verify passcode'}
-                  </Button>
-                )}
-              </div>
-              {!codeRequested && (
-                <p className="text-xs text-muted-foreground">
-                  We’ll email you an 8-digit code once you provide a valid address.
+            </div>
+          </div>
+        </div>
+
+        <div className="text-center">
+          <p className="text-lg font-semibold text-[#2d3748] mb-5">
+            Get started
+          </p>
+          <form className="space-y-4" onSubmit={handleVerifyPasscode} noValidate>
+            <div className="space-y-2">
+              <input
+                id="email"
+                name="email"
+                type="email"
+                placeholder="Enter your email"
+                value={form.email}
+                onChange={handleInputChange}
+                onBlur={handleEmailBlur}
+                aria-invalid={Boolean(emailError)}
+                required
+                className="w-full px-5 py-4 text-base text-[#1a202c] placeholder:text-[#718096] border-2 border-[#e2e8f0] rounded-xl outline-none transition-all bg-white focus:border-[#667eea] focus:shadow-[0_0_0_3px_rgba(102,126,234,0.1)]"
+              />
+              {emailError && (
+                <p className="text-xs text-red-500 text-left" role="alert">
+                  {emailError}
                 </p>
               )}
-            </form>
-          </CardContent>
-        </Card>
+            </div>
+            {codeRequested && (
+              <div className="space-y-2">
+                <input
+                  id="passcode"
+                  name="passcode"
+                  type="text"
+                  placeholder="Enter 8-digit code"
+                  value={form.passcode}
+                  onChange={handleInputChange}
+                  inputMode="numeric"
+                  pattern="\\d{8}"
+                  maxLength={8}
+                  required={codeRequested}
+                  className="w-full px-5 py-4 text-base text-[#1a202c] placeholder:text-[#718096] border-2 border-[#e2e8f0] rounded-xl outline-none transition-all bg-white focus:border-[#667eea] focus:shadow-[0_0_0_3px_rgba(102,126,234,0.1)]"
+                />
+                <p className="text-xs text-[#718096] text-left">
+                  Enter the latest code from your inbox. Codes expire quickly, so request a new one if needed.
+                </p>
+              </div>
+            )}
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button
+                type="button"
+                onClick={handleRequestPasscode}
+                disabled={requestingCode || !canRequestPasscode}
+                className="w-full sm:flex-1 px-5 py-4 text-base font-semibold text-white bg-gradient-to-r from-[#667eea] to-[#764ba2] rounded-xl cursor-pointer transition-all shadow-[0_4px_14px_rgba(102,126,234,0.4)] hover:translate-y-[-2px] hover:shadow-[0_6px_20px_rgba(102,126,234,0.5)] active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+              >
+                {requestingCode
+                  ? 'Sending...'
+                  : codeRequested
+                    ? 'Resend passcode'
+                    : 'Send passcode'}
+              </button>
+              {codeRequested && (
+                <button
+                  type="submit"
+                  disabled={verifyingCode}
+                  className="w-full sm:flex-1 px-5 py-4 text-base font-semibold text-white bg-gradient-to-r from-[#667eea] to-[#764ba2] rounded-xl cursor-pointer transition-all shadow-[0_4px_14px_rgba(102,126,234,0.4)] hover:translate-y-[-2px] hover:shadow-[0_6px_20px_rgba(102,126,234,0.5)] active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+                >
+                  {verifyingCode ? 'Verifying...' : 'Verify passcode'}
+                </button>
+              )}
+            </div>
+            {!codeRequested && (
+              <p className="text-sm text-[#718096]">
+                We'll email you an 8-digit code once you provide a valid address.
+              </p>
+            )}
+          </form>
+        </div>
       </div>
     </div>
   )
