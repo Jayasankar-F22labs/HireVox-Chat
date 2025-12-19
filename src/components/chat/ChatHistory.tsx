@@ -1,3 +1,4 @@
+import { Trash2 } from 'lucide-react'
 import type { Conversation } from '@/services/api'
 
 interface ChatHistoryProps {
@@ -6,9 +7,11 @@ interface ChatHistoryProps {
   loading?: boolean
   error?: string | null
   onChatSelect?: (conversation: Conversation) => void
+  onChatDelete?: (conversation: Conversation) => void
+  deletingChatId?: string | null
 }
 
-export function ChatHistory({ conversations, activeChatId, loading, error, onChatSelect }: ChatHistoryProps) {
+export function ChatHistory({ conversations, activeChatId, loading, error, onChatSelect, onChatDelete, deletingChatId }: ChatHistoryProps) {
   const getChatTitle = (conversation: Conversation): string => {
     if (conversation.title) {
       return conversation.title
@@ -56,20 +59,47 @@ export function ChatHistory({ conversations, activeChatId, loading, error, onCha
               activeChatId === conversation.id ||
               activeChatId === conversationId
             )
+            const isDeleting = deletingChatId === conversationId
             return (
-              <button
+              <div
                 key={conversationId || index}
-                type="button"
-                onClick={() => onChatSelect?.(conversation)}
-                className={`flex w-full items-center justify-between rounded-2xl px-4 py-3 text-left text-sm transition-all duration-200 ${
+                className={`group flex w-full items-center gap-2 rounded-2xl px-4 py-3 transition-all duration-200 ${
                   isActive
-                    ? 'bg-gradient-to-r from-[#7D3BFF]/20 to-[#4ED0FF]/10 border border-[#7D3BFF]/30 text-white shadow-[0_10px_25px_rgba(125,59,255,0.25)]'
-                    : 'text-white/70 hover:bg-white/[0.06] hover:text-white/90'
+                    ? 'bg-gradient-to-r from-[#7D3BFF]/20 to-[#4ED0FF]/10 border border-[#7D3BFF]/30 shadow-[0_10px_25px_rgba(125,59,255,0.25)]'
+                    : 'hover:bg-white/[0.06]'
                 }`}
               >
-                <span className={`truncate ${isActive ? 'font-medium' : ''}`}>{getChatTitle(conversation)}</span>
-                <span className={`ml-2 shrink-0 text-[10px] uppercase tracking-[0.3em] ${isActive ? 'text-[#7D3BFF]' : 'text-white/30'}`}>↗</span>
-              </button>
+                <button
+                  type="button"
+                  onClick={() => onChatSelect?.(conversation)}
+                  className={`flex-1 text-left text-sm transition-all duration-200 ${
+                    isActive
+                      ? 'text-white font-medium'
+                      : 'text-white/70 hover:text-white/90'
+                  }`}
+                >
+                  <span className="truncate block">{getChatTitle(conversation)}</span>
+                </button>
+                <div className="flex items-center gap-1 shrink-0">
+                  <span className={`text-[10px] uppercase tracking-[0.3em] ${isActive ? 'text-[#7D3BFF]' : 'text-white/30'}`}>↗</span>
+                  {onChatDelete && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onChatDelete(conversation)
+                      }}
+                      disabled={isDeleting}
+                      className={`opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-white/10 ${
+                        isDeleting ? 'opacity-100 cursor-not-allowed' : ''
+                      }`}
+                      aria-label="Delete conversation"
+                    >
+                      <Trash2 className={`h-3.5 w-3.5 ${isDeleting ? 'text-white/50 animate-pulse' : 'text-white/40 hover:text-red-400'}`} />
+                    </button>
+                  )}
+                </div>
+              </div>
             )
           })}
       </div>

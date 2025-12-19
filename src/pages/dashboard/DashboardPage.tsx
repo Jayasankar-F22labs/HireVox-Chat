@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent } from '@/components/ui/popover'
 import { supabase } from '@/lib/supabaseClient'
 import { useAuth } from '@/providers/AuthProvider'
-import { getConversations, getConversationMessages, sendChatMessage, downloadConversation, type Conversation } from '@/services/api'
+import { getConversations, getConversationMessages, sendChatMessage, downloadConversation, deleteConversation, type Conversation } from '@/services/api'
 
 // Generate UUID v4
 function generateUUID(): string {
@@ -38,6 +38,7 @@ export default function DashboardPage() {
   const [loadingMessages, setLoadingMessages] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [sending, setSending] = useState(false)
+  const [deletingChatId, setDeletingChatId] = useState<string | null>(null)
   const { session } = useAuth()
   const navigate = useNavigate()
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -288,6 +289,49 @@ export default function DashboardPage() {
     }
   }
 
+  const handleDeleteConversation = async (conversation: Conversation) => {
+    const conversationId = conversation.session_id || conversation.id
+    if (!conversationId) {
+      toast.error('Invalid conversation', {
+        description: 'Cannot delete conversation: missing ID.',
+      })
+      return
+    }
+
+    // Confirm deletion
+    if (!window.confirm('Are you sure you want to delete this conversation?')) {
+      return
+    }
+
+    setDeletingChatId(conversationId)
+    try {
+      await deleteConversation(conversationId)
+      
+      // Remove from conversations list
+      setConversations((prev) => prev.filter((conv) => {
+        const convId = conv.session_id || conv.id
+        return convId !== conversationId
+      }))
+
+      // If the deleted conversation was active, navigate to /chat
+      if (activeChatId === conversationId) {
+        navigate('/chat', { replace: true })
+        setMessages([])
+      }
+
+      toast.success('Conversation deleted', {
+        description: 'The conversation has been deleted successfully.',
+      })
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to delete conversation'
+      toast.error('Delete failed', {
+        description: errorMessage,
+      })
+    } finally {
+      setDeletingChatId(null)
+    }
+  }
+
   const handlePromptKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault()
@@ -359,6 +403,8 @@ export default function DashboardPage() {
             loading={loading}
             error={error}
             onChatSelect={handleChatSelect}
+            onChatDelete={handleDeleteConversation}
+            deletingChatId={deletingChatId}
           />
 
           <div className="mt-4 flex shrink-0 items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3">

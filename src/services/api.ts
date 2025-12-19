@@ -183,6 +183,18 @@ export async function downloadConversation(id: string): Promise<void> {
 }
 
 /**
+ * Deletes a conversation by session_id
+ */
+export async function deleteConversation(session_id: string): Promise<void> {
+  try {
+    await axiosInstance.delete(`/conversations/${session_id}`)
+  } catch (error) {
+    console.error('Error deleting conversation:', error)
+    throw error
+  }
+}
+
+/**
  * Sends a message to the chat stream endpoint
  */
 export interface ChatStreamRequest {
