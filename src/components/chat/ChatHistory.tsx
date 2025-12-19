@@ -13,14 +13,19 @@ interface ChatHistoryProps {
 
 export function ChatHistory({ conversations, activeChatId, loading, error, onChatSelect, onChatDelete, deletingChatId }: ChatHistoryProps) {
   const getChatTitle = (conversation: Conversation): string => {
+    let title: string
     if (conversation.title) {
-      return conversation.title
+      title = conversation.title
+    } else {
+      const identifier = conversation.session_id || conversation.id
+      if (identifier) {
+        title = `Chat ${identifier.slice(0, 8)}`
+      } else {
+        title = 'Untitled Chat'
+      }
     }
-    const identifier = conversation.session_id || conversation.id
-    if (identifier) {
-      return `Chat ${identifier.slice(0, 8)}`
-    }
-    return 'Untitled Chat'
+    // Truncate to 30 characters
+    return title.length > 30 ? `${title.slice(0, 30)}...` : title
   }
 
   return (
@@ -80,25 +85,22 @@ export function ChatHistory({ conversations, activeChatId, loading, error, onCha
                 >
                   <span className="truncate block">{getChatTitle(conversation)}</span>
                 </button>
-                <div className="flex items-center gap-1 shrink-0">
-                  <span className={`text-[10px] uppercase tracking-[0.3em] ${isActive ? 'text-[#7D3BFF]' : 'text-white/30'}`}>↗</span>
-                  {onChatDelete && (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        onChatDelete(conversation)
-                      }}
-                      disabled={isDeleting}
-                      className={`opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-white/10 ${
-                        isDeleting ? 'opacity-100 cursor-not-allowed' : ''
-                      }`}
-                      aria-label="Delete conversation"
-                    >
-                      <Trash2 className={`h-3.5 w-3.5 ${isDeleting ? 'text-white/50 animate-pulse' : 'text-white/40 hover:text-red-400'}`} />
-                    </button>
-                  )}
-                </div>
+                {onChatDelete && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onChatDelete(conversation)
+                    }}
+                    disabled={isDeleting}
+                    className={`p-1.5 rounded-lg hover:bg-white/10 transition-colors ${
+                      isDeleting ? 'cursor-not-allowed' : ''
+                    }`}
+                    aria-label="Delete conversation"
+                  >
+                    <Trash2 className={`h-3.5 w-3.5 ${isDeleting ? 'text-white/50 animate-pulse' : 'text-white/40 hover:text-red-400'}`} />
+                  </button>
+                )}
               </div>
             )
           })}
