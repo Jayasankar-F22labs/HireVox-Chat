@@ -68,7 +68,7 @@ export function ChatHistory({ conversations, activeChatId, loading, error, onCha
             return (
               <div
                 key={conversationId || index}
-                className={`group flex w-full items-center gap-2 rounded-2xl px-4 py-3 transition-all duration-200 ${
+                className={`group flex w-full items-center gap-3 rounded-2xl px-4 py-3 transition-all duration-200 ${
                   isActive
                     ? 'bg-gradient-to-r from-[#7D3BFF]/20 to-[#4ED0FF]/10 border border-[#7D3BFF]/30 shadow-[0_10px_25px_rgba(125,59,255,0.25)]'
                     : 'hover:bg-white/[0.06]'
@@ -77,7 +77,7 @@ export function ChatHistory({ conversations, activeChatId, loading, error, onCha
                 <button
                   type="button"
                   onClick={() => onChatSelect?.(conversation)}
-                  className={`flex-1 text-left text-sm transition-all duration-200 ${
+                  className={`flex-1 min-w-0 text-left text-sm transition-all duration-200 ${
                     isActive
                       ? 'text-white font-medium'
                       : 'text-white/70 hover:text-white/90'
@@ -93,7 +93,7 @@ export function ChatHistory({ conversations, activeChatId, loading, error, onCha
                       onChatDelete(conversation)
                     }}
                     disabled={isDeleting}
-                    className={`p-1.5 rounded-lg hover:bg-white/10 transition-colors ${
+                    className={`flex-shrink-0 p-1.5 rounded-lg hover:bg-white/10 transition-colors ${
                       isDeleting ? 'cursor-not-allowed' : ''
                     }`}
                     aria-label="Delete conversation"
